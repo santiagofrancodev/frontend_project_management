@@ -1,5 +1,4 @@
 <template>
-
     <div class="flex min-h-full flex-1 flex-col justify-center px-6 py-12 lg:px-8">
         <div class="sm:mx-auto sm:w-full sm:max-w-sm">
             <img class="mx-auto h-10 w-auto" src="https://tailwindui.com/img/logos/mark.svg?color=indigo&shade=600"
@@ -39,11 +38,12 @@
                     </div>
                 </div>
 
-
-
                 <div>
-                    <Button type="submit">
-                        <span v-if="props.formType == 'signin'">
+                    <Button type="submit" :disabled="isSubmitting">
+                        <span v-if="isSubmitting">
+                            Processing...
+                        </span>
+                        <span v-else-if="props.formType == 'signin'">
                             Sign in
                         </span>
                         <span v-else>
@@ -57,16 +57,17 @@
                 <span v-if="props.formType != 'signup'">
                     Not a member?
                     {{ ' ' }}
-                    <NuxtLink to="/signup" class="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">Start a
-                        14 day free
-                        trial</NuxtLink>
+                    <NuxtLink to="/signup" class="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">
+                        Start a 14 day free trial
+                    </NuxtLink>
                 </span>
 
                 <span v-else>
                     Already a member?
                     {{ ' ' }}
-                    <NuxtLink to="/" class="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">Login to your
-                        account</NuxtLink>
+                    <NuxtLink to="/" class="font-semibold leading-6 text-indigo-600 hover:text-indigo-500">
+                        Login to your account
+                    </NuxtLink>
                 </span>
             </p>
         </div>
@@ -74,8 +75,6 @@
 </template>
 
 <script setup>
-
-
 const props = defineProps({
     formType: {
         type: String,
@@ -91,15 +90,43 @@ const userForm = reactive({
     password_confirmation: ''
 })
 
-const { login, register, errorBag } = useAuth()
+const isSubmitting = ref(false)
 
+const { login, register, errorBag, resetErrorBag } = useAuth()
 
-function handleForm()
-{
-    if (props.formType == 'signin') {
-        login(userForm)
-    } else {
-        register(userForm)
+// Limpiar errores y formulario cuando cambia el tipo de formulario
+watch(() => props.formType, () => {
+    resetErrorBag()
+    userForm.name = ''
+    userForm.email = ''
+    userForm.password = ''
+    userForm.password_confirmation = ''
+})
+
+// Limpiar errores cuando el componente se monta
+onMounted(() => {
+    resetErrorBag()
+})
+
+// Limpiar errores cuando se destruye el componente
+onUnmounted(() => {
+    resetErrorBag()
+})
+
+async function handleForm() {
+    if (isSubmitting.value) return
+    
+    isSubmitting.value = true
+    resetErrorBag()
+    
+    try {
+        if (props.formType == 'signin') {
+            await login(userForm)
+        } else {
+            await register(userForm)
+        }
+    } finally {
+        isSubmitting.value = false
     }
 }
 </script>
